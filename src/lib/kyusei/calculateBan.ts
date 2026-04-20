@@ -1,6 +1,13 @@
 import type { BanPositions, Direction } from './types';
 import { BAN_LAYOUT } from './constants';
 
+function normStar(n: number): number {
+  let s = n;
+  while (s < 1) s += 9;
+  while (s > 9) s -= 9;
+  return s;
+}
+
 export function calculateYearBan(year: number): BanPositions {
   const baseYear = 2026;
   const baseStar = 1; // 2026年は一白水星（2026/4/20実測確認）
@@ -40,5 +47,15 @@ export function calculateDayBan(date: Date): BanPositions {
   let chuguStar = refStar - diff;
   while (chuguStar < 1) chuguStar += 9;
   while (chuguStar > 9) chuguStar -= 9;
+  return { chuguStar, positions: BAN_LAYOUT[chuguStar] as Record<Direction, number> };
+}
+
+export function calculateHourBan(date: Date): BanPositions {
+  const dayBan = calculateDayBan(date);
+  const startStar = [1, 4, 7].includes(dayBan.chuguStar) ? 8
+    : [2, 5, 8].includes(dayBan.chuguStar) ? 2 : 5;
+  const h = date.getHours();
+  const hourIndex = (h === 23 || h === 0) ? 0 : Math.ceil(h / 2);
+  const chuguStar = normStar(startStar - hourIndex);
   return { chuguStar, positions: BAN_LAYOUT[chuguStar] as Record<Direction, number> };
 }
