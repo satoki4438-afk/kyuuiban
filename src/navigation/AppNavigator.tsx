@@ -7,6 +7,7 @@ import TodayScreen from '../screens/TodayScreen';
 import CompassScreen from '../screens/CompassScreen';
 import DestinyScreen from '../screens/DestinyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import LuckySpotsScreen from '../screens/LuckySpotsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -39,6 +40,11 @@ export default function AppNavigator() {
           name="宿命"
           component={DestinyScreen}
           options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>★</Text> }}
+        />
+        <Tab.Screen
+          name="スポット"
+          component={LuckySpotsScreen}
+          options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📍</Text> }}
         />
         <Tab.Screen
           name="設定"
