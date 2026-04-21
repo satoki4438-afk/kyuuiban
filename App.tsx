@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInAnonymously } from 'firebase/auth';
+import { auth } from './src/lib/firebase/config';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import AppNavigator from './src/navigation/AppNavigator';
 import type { Gender } from './src/lib/kyusei/types';
 
 export default function App() {
   const [onboardingDone, setOnboardingDone] = useState(false);
+
+  useEffect(() => {
+    signInAnonymously(auth).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem('user_profile').then(v => {
+      if (v) setOnboardingDone(true);
+    });
+  }, []);
 
   const handleOnboardingComplete = async (data: {
     name: string;
