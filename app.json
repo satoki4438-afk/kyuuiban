@@ -22,7 +22,9 @@
     },
     "android": {
       "package": "com.tasstudio.kyuuiban",
-      "permissions": ["ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1A0B2E"
@@ -43,6 +45,11 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0a7dda74-d2a4-4486-9124-602f5ab0fbc6"
+      }
+    }
   }
 }
