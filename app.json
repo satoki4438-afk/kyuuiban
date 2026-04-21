@@ -3,6 +3,7 @@
     "name": "kyuuiban",
     "slug": "kyuuiban",
     "version": "1.0.0",
+    "owner": "tas.studio",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,11 +15,13 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.tasstudio.kyuuiban",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "吉方位のスポットを探すために現在地を使用します"
       }
     },
     "android": {
+      "package": "com.tasstudio.kyuuiban",
       "permissions": ["ACCESS_FINE_LOCATION"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
