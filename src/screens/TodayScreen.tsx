@@ -1,10 +1,14 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator,
 } from 'react-native';
 import Animated, {
   useSharedValue, withTiming, useAnimatedStyle, Easing,
 } from 'react-native-reanimated';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../lib/firebase/config';
+import { getCachedMessage, cacheMessage } from '../lib/firebase/fortuneCache';
+import { generateFortuneMessage } from '../lib/claude/generateFortune';
 import { COLORS } from '../constants/colors';
 import { useUserProfile } from '../hooks/useUserProfile';
 import {
@@ -45,19 +49,14 @@ const bar = StyleSheet.create({
 });
 
 function TotalScore({ value }: { value: number }) {
-  const animVal = useSharedValue(0);
+  const [display, setDisplay] = useState(0);
   useEffect(() => {
-    animVal.value = withTiming(value, { duration: 800, easing: Easing.out(Easing.quad) });
-  }, [value]);
-  const style = useAnimatedStyle(() => ({}));
-  const [display, setDisplay] = React.useState(0);
-  useEffect(() => {
-    let start = 0;
+    let cur = 0;
     const step = value / 30;
     const id = setInterval(() => {
-      start += step;
-      if (start >= value) { setDisplay(value); clearInterval(id); }
-      else setDisplay(Math.floor(start));
+      cur += step;
+      if (cur >= value) { setDisplay(value); clearInterval(id); }
+      else setDisplay(Math.floor(cur));
     }, 26);
     return () => clearInterval(id);
   }, [value]);
@@ -67,21 +66,58 @@ function TotalScore({ value }: { value: number }) {
 export default function TodayScreen() {
   const profile = useUserProfile();
   const now = useMemo(() => new Date(), []);
+  const [message, setMessage] = useState<string | null>(null);
+  const [msgLoading, setMsgLoading] = useState(false);
 
-  const { ban, lucky, scores, dayStarInfo, luckyInfo } = useMemo(() => {
+  const { ban, lucky, scores, dayStarInfo, luckyInfo, honmeiStar } = useMemo(() => {
     const ban = calculateDayBan(now);
-    const lucky = profile ? calculateLuckyDirections(profile.honmeiSei, ban) : { luckyDirections: [], avoidDirections: [] };
+    const lucky = profile
+      ? calculateLuckyDirections(profile.honmeiSei, ban)
+      : { luckyDirections: [], avoidDirections: [] };
     const scores = profile
       ? calculateFortuneScores(profile.honmeiSei, now, lucky.luckyDirections.length)
       : { total: 0, love: 0, money: 0, work: 0, health: 0 };
-    const dayStarInfo = NINE_STARS[ban.chuguStar - 1];
-    const luckyInfo = STAR_LUCKY_INFO[ban.chuguStar];
-    return { ban, lucky, scores, dayStarInfo, luckyInfo };
+    return {
+      ban,
+      lucky,
+      scores,
+      dayStarInfo: NINE_STARS[ban.chuguStar - 1],
+      luckyInfo: STAR_LUCKY_INFO[ban.chuguStar],
+      honmeiStar: profile ? NINE_STARS[profile.honmeiSei - 1] : null,
+    };
   }, [profile, now]);
 
-  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  useEffect(() => {
+    if (!profile) return;
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      setMsgLoading(true);
+      try {
+        const cached = await getCachedMessage();
+        if (cached) {
+          setMessage(cached);
+          return;
+        }
+        const dateLabel = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+        const generated = await generateFortuneMessage({
+          starName: honmeiStar?.name ?? '',
+          gogyou: honmeiStar?.gogyou ?? '',
+          totalScore: scores.total,
+          luckyDirection: lucky.luckyDirections[0] ?? 'なし',
+          dateLabel,
+        });
+        setMessage(generated);
+        await cacheMessage(generated);
+      } catch {
+        setMessage(null);
+      } finally {
+        setMsgLoading(false);
+      }
+    });
+    return () => unsub();
+  }, [profile, scores.total]);
 
-  const honmeiStar = profile ? NINE_STARS[profile.honmeiSei - 1] : null;
+  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 
   if (!profile) {
     return (
@@ -132,12 +168,16 @@ export default function TodayScreen() {
 
         <View style={styles.messageCard}>
           <Text style={styles.messageLabel}>今日のお告げ</Text>
-          <Text style={styles.messageText}>
-            今日の中宮は{dayStarInfo.name}。{dayStarInfo.gogyou}の気が満ちる一日です。
-            {lucky.luckyDirections.length > 0
-              ? `${lucky.luckyDirections[0]}の方角に運気が宿っています。`
-              : '内なる力を信じて静かに過ごしましょう。'}
-          </Text>
+          {msgLoading ? (
+            <View style={styles.msgLoading}>
+              <ActivityIndicator size="small" color={COLORS.gold} />
+              <Text style={styles.msgLoadingText}>お告げを受信中…</Text>
+            </View>
+          ) : (
+            <Text style={styles.messageText}>
+              {message ?? `今日の中宮は${dayStarInfo.name}。${dayStarInfo.gogyou}の気が満ちる一日です。${lucky.luckyDirections[0] ? `${lucky.luckyDirections[0]}の方角に運気が宿っています。` : '内なる力を信じて静かに過ごしましょう。'}`}
+            </Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -160,9 +200,7 @@ const styles = StyleSheet.create({
     width: '100%', backgroundColor: COLORS.bgSecondary,
     borderRadius: 12, padding: 16, marginBottom: 16,
   },
-  luckyRow: {
-    width: '100%', flexDirection: 'row', gap: 8, marginBottom: 16,
-  },
+  luckyRow: { width: '100%', flexDirection: 'row', gap: 8, marginBottom: 16 },
   luckyItem: {
     flex: 1, backgroundColor: COLORS.bgSecondary,
     borderRadius: 10, padding: 12, alignItems: 'center',
@@ -176,4 +214,6 @@ const styles = StyleSheet.create({
   },
   messageLabel: { color: COLORS.gold, fontSize: 11, marginBottom: 8, letterSpacing: 2 },
   messageText: { color: COLORS.textPrimary, fontSize: 14, lineHeight: 22 },
+  msgLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  msgLoadingText: { color: COLORS.textSecondary, fontSize: 13 },
 });
