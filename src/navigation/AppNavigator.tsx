@@ -1,15 +1,33 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/colors';
 import TodayScreen from '../screens/TodayScreen';
 import CompassScreen from '../screens/CompassScreen';
 import DestinyScreen from '../screens/DestinyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LuckySpotsScreen from '../screens/LuckySpotsScreen';
+import PaywallScreen from '../screens/PaywallScreen';
+import { useSubscription } from '../hooks/useSubscription';
 
 const Tab = createBottomTabNavigator();
+
+function GatedScreen({ Screen }: { Screen: React.ComponentType<any> }) {
+  const { isSubscribed, loading } = useSubscription();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bgPrimary }}>
+        <ActivityIndicator color={COLORS.gold} />
+      </View>
+    );
+  }
+  return isSubscribed ? <Screen /> : <PaywallScreen />;
+}
+
+const GatedCompass = () => <GatedScreen Screen={CompassScreen} />;
+const GatedDestiny = () => <GatedScreen Screen={DestinyScreen} />;
+const GatedSpots = () => <GatedScreen Screen={LuckySpotsScreen} />;
 
 export default function AppNavigator() {
   return (
@@ -33,17 +51,17 @@ export default function AppNavigator() {
         />
         <Tab.Screen
           name="方位"
-          component={CompassScreen}
+          component={GatedCompass}
           options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🧭</Text> }}
         />
         <Tab.Screen
           name="宿命"
-          component={DestinyScreen}
+          component={GatedDestiny}
           options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>★</Text> }}
         />
         <Tab.Screen
           name="スポット"
-          component={LuckySpotsScreen}
+          component={GatedSpots}
           options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📍</Text> }}
         />
         <Tab.Screen
