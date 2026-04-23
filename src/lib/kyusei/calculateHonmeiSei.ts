@@ -8,12 +8,12 @@ export function calculateHonmeiSei(birthDate: Date): number {
       ? year - 1
       : year;
 
-  const last2 = effectiveYear % 100;
-  let sum = Math.floor(last2 / 10) + (last2 % 10);
+  let sum = String(effectiveYear).split('').reduce((a, d) => a + Number(d), 0);
   while (sum >= 10) {
     sum = Math.floor(sum / 10) + (sum % 10);
   }
   let star = 11 - sum;
+  if (star > 9) star -= 9;
   if (star <= 0) star += 9;
   return star;
 }

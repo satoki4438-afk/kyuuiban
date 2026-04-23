@@ -50,12 +50,45 @@ export function calculateDayBan(date: Date): BanPositions {
   return { chuguStar, positions: BAN_LAYOUT[chuguStar] as Record<Direction, number> };
 }
 
+function getJDN(date: Date): number {
+  const Y = date.getFullYear();
+  const M = date.getMonth() + 1;
+  const D = date.getDate();
+  const a = Math.floor((14 - M) / 12);
+  const y = Y + 4800 - a;
+  const m = M + 12 * a - 3;
+  return D + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+}
+
+function getDayZodiacIndex(date: Date): number {
+  // 子=0, 丑=1, 寅=2, 卯=3, 辰=4, 巳=5, 午=6, 未=7, 申=8, 酉=9, 戌=10, 亥=11
+  // 基準: 1900/1/1 (JDN 2415021) = 甲戌 (戌=10)
+  return (getJDN(date) + 1) % 12;
+}
+
+function isYoton(date: Date): boolean {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  // 陽遁: 冬至(12/22頃)〜夏至(6/21頃)
+  if (m >= 1 && m <= 5) return true;
+  if (m === 6 && d <= 21) return true;
+  if (m === 12 && d >= 22) return true;
+  return false;
+}
+
 export function calculateHourBan(date: Date): BanPositions {
-  const dayBan = calculateDayBan(date);
-  const startStar = [1, 4, 7].includes(dayBan.chuguStar) ? 8
-    : [2, 5, 8].includes(dayBan.chuguStar) ? 2 : 5;
+  const zodiacIndex = getDayZodiacIndex(date);
+  const baseStar = [0, 3, 6, 9].includes(zodiacIndex) ? 1
+    : [1, 4, 7, 10].includes(zodiacIndex) ? 4 : 7;
+
   const h = date.getHours();
-  const hourIndex = (h === 23 || h === 0) ? 0 : Math.ceil(h / 2);
-  const chuguStar = normStar(startStar - hourIndex);
+  const tokiIndex = Math.floor((h + 1) / 2) % 12;
+
+  let chuguStar: number;
+  if (isYoton(date)) {
+    chuguStar = ((baseStar + tokiIndex - 1) % 9) + 1;
+  } else {
+    chuguStar = ((baseStar - tokiIndex - 1 + 108) % 9) + 1;
+  }
   return { chuguStar, positions: BAN_LAYOUT[chuguStar] as Record<Direction, number> };
 }

@@ -39,11 +39,11 @@ export const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
 };
 
 export const SEISHO_MAP: Record<Gogyou, Gogyou[]> = {
-  '水': ['金', '水'],
-  '木': ['水', '木'],
-  '火': ['木', '火'],
-  '土': ['火', '土'],
-  '金': ['土', '金'],
+  '水': ['金', '水', '木'],
+  '木': ['水', '木', '火'],
+  '火': ['木', '火', '土'],
+  '土': ['火', '土', '金'],
+  '金': ['土', '金', '水'],
 };
 
 export const BAN_LAYOUT: Record<number, Record<Direction, number>> = {
