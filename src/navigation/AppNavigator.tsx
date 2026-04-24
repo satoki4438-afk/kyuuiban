@@ -14,7 +14,9 @@ import { useSubscription } from '../hooks/useSubscription';
 const Tab = createBottomTabNavigator();
 
 function GatedScreen({ Screen }: { Screen: React.ComponentType<any> }) {
-  const { isSubscribed, loading } = useSubscription();
+  // TODO: テスト用 — リリース前に元に戻す
+  const isSubscribed = true;
+  const loading = false;
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bgPrimary }}>

@@ -22,6 +22,7 @@
     },
     "android": {
       "package": "com.tasstudio.kyuuiban",
+      "versionCode": 3,
       "permissions": [
         "ACCESS_FINE_LOCATION"
       ],
